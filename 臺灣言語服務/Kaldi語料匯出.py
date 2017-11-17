@@ -11,7 +11,6 @@ from 臺灣言語資料庫.資料模型 import 影音表
 from 臺灣言語工具.系統整合.程式腳本 import 程式腳本
 from 臺灣言語工具.解析整理.拆文分析器 import 拆文分析器
 from 臺灣言語工具.語言模型.KenLM語言模型訓練 import KenLM語言模型訓練
-from 臺灣言語服務.漢語語音處理 import 漢語語音處理
 from 臺灣言語工具.基本物件.公用變數 import 標點符號
 from 臺灣言語工具.基本物件.公用變數 import 無音
 from 臺灣言語工具.基本物件.公用變數 import 分詞符號
@@ -101,7 +100,7 @@ class Kaldi語料匯出(程式腳本):
                 全部詞.add(
                     cls.音節轉辭典格式(聲類, 韻類, 調類, 加語料, 詞物件, 音標系統)
                 )
-            except:
+            except (ValueError, RuntimeError):
                 字物件陣列 = 詞物件.篩出字物件()
                 if (
                     len(字物件陣列) == 1 and
@@ -147,14 +146,17 @@ class Kaldi語料匯出(程式腳本):
                 if 加語料:
                     try:
                         韻類[一个音素].add(一个音素調)
-                    except:
+                    except KeyError:
                         韻類[一个音素] = {一个音素調}
                     try:
                         調類[調].add(一个音素調)
-                    except:
+                    except KeyError:
                         調類[調] = {一个音素調}
                 else:
-                    if 一个音素調 not in 韻類[一个音素] or 一个音素調 not in 調類[調]:
+                    try:
+                        if 一个音素調 not in 韻類[一个音素] or 一个音素調 not in 調類[調]:
+                            raise RuntimeError('語料無這个韻抑是調')
+                    except KeyError:
                         raise RuntimeError('語料無這个韻抑是調')
         if 詞條:
             return '{}\t{}'.format(''.join(詞條.split()), ' '.join(聲韻陣列))
@@ -224,7 +226,7 @@ class Kaldi語料匯出(程式腳本):
                 語者名 = ''.join(原本語者.split())
                 try:
                     語者 = 語者名對應輸出名[語者名]
-                except:
+                except KeyError:
                     語者 = '{0:07}{1}'.format(第幾个人, 語者名)
                     語者名對應輸出名[語者名] = 語者
                     第幾个人 += 1
@@ -245,7 +247,7 @@ class Kaldi語料匯出(程式腳本):
         try:
             while True:
                 聽拍 = 聽拍.聽拍校對.first().新聽拍
-        except:
+        except AttributeError:
             return 聽拍
 
     @classmethod
@@ -253,7 +255,7 @@ class Kaldi語料匯出(程式腳本):
         try:
             while True:
                 文本 = 文本.文本校對.first().新文本
-        except:
+        except AttributeError:
             return 文本
 
     @classmethod
